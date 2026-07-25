@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Người Que Đại Chiến — ratman4080</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
+        }
+        canvas {
+            border: 2px solid #333;
+            background: #0d0d15;
+            cursor: crosshair;
+        }
+        #menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #menu h1 {
+            color: #0ff;
+            font-size: 48px;
+            text-shadow: 0 0 30px #0ff;
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+        #menu .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+        .menuBtn {
+            padding: 15px 50px;
+            margin: 10px;
+            background: transparent;
+            border: 2px solid #0ff;
+            color: #0ff;
+            font-size: 18px;
+            font-family: 'Segoe UI', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .menuBtn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 20px #0ff;
+        }
+        #ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            pointer-events: none;
+            display: none;
+        }
+        .healthBarContainer {
+            position: absolute;
+            top: 20px;
+            width: 300px;
+            height: 30px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #p1Health { left: 20px; }
+        #p2Health { right: 20px; }
+        .healthBar {
+            height: 100%;
+            transition: width 0.2s;
+        }
+        #p1Bar { background: #0f0; box-shadow: 0 0 10px #0f0; }
+        #p2Bar { background: #f00; box-shadow: 0 0 10px #f00; }
+        .playerName {
+            position: absolute;
+            top: -25px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+        #p1Name { left: 0; }
+        #p2Name { right: 0; }
+        .weaponIcon {
+            position: absolute;
+            top: 60px;
+            width: 40px;
+            height: 40px;
+            border: 2px solid #555;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #1a1a2e;
+        }
+        #p1Weapon { left: 20px; }
+        #p2Weapon { right: 20px; }
+        #roundInfo {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff0;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff0;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: #444;
+            font-size: 11px;
+        }
+        #winnerScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        #winnerText {
+            color: #ff0;
+            font-size: 56px;
+            text-shadow: 0 0 40px #ff0;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="game" width="1200" height="700"></canvas>
+        
+        <div id="menu">
+            <h1>NGƯỜI QUE ĐẠI CHIẾN</h1>
+            <div class="subtitle">VŨ KHÍ ĐA DẠNG — ĐỐI KHÁNG CĂNG THẲNG</div>
+            <button class="menuBtn" onclick="batDau('ai')">ĐẤU VỚI MÁY</button>
+            <button class="menuBtn" onclick="batDau('2nguoi')">2 NGƯỜI CHƠI</button>
+            <div style="margin-top:30px;color:#555;font-size:12px">
+                Người Que 1: WASD di chuyển | F đấm | G đá | H đổi vũ khí<br>
+                Người Que 2: Arrow di chuyển | L đấm | K đá | J đổi vũ khí
+            </div>
+        </div>
+        
+        <div id="ui">
+            <div class="healthBarContainer" id="p1Health">
+                <div class="playerName" id="p1Name">NGƯỜI QUE 1</div>
+                <div class="healthBar" id="p1Bar" style="width:100%"></div>
+            </div>
+            <div class="healthBarContainer" id="p2Health">
+                <div class="playerName" id="p2Name">NGƯỜI QUE 2</div>
+                <div class="healthBar" id="p2Bar" style="width:100%"></div>
+            </div>
+            <div class="weaponIcon" id="p1Weapon">👊</div>
+            <div class="weaponIcon" id="p2Weapon">👊</div>
+            <div id="roundInfo">Vòng 1</div>
+            <div id="controls"></div>
+        </div>
+        
+        <div id="winnerScreen">
+            <div id="winnerText"></div>
+            <button class="menuBtn" onclick="veMenu()">MENU CHÍNH</button>
+            <button class="menuBtn" onclick="choiLai()">CHƠI LẠI</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        
+        // === VŨ KHÍ ===
+        const VU_KHI = [
+            {
+                ten: 'Tay Không',
+                icon: '👊',
+                satThuong: 8,
+                tam: 60,
+                tocDo: 12,
+                loai: 'don',
+                mau: '#ffaa00',
+                hieuUng: 'none',
+                moTa: 'Đấm thường — nhanh, tầm gần'
+            },
+            {
+                ten: 'Kiếm Điện',
+                icon: '⚡',
+                satThuong: 18,
+                tam: 90,
+                tocDo: 8,
+                loai: 'chem',
+                mau: '#00ffff',
+                hieuUng: 'dien',
+                moTa: 'Chém + giật điện — làm chậm đối thủ'
+            },
+            {
+                ten: 'Găng Tay Sắt',
+                icon: '🔩',
+                satThuong: 15,
+                tam: 55,
+                tocDo: 14,
+                loai: 'don',
+                mau: '#888888',
+                hieuUng: 'choang',
+                moTa: 'Đấm mạnh — có tỷ lệ choáng'
+            },
+            {
+                ten: 'Roi Lửa',
+                icon: '🔥',
+                satThuong: 22,
+                tam: 110,
+                tocDo: 6,
+                loai: 'chem',
+                mau: '#ff4400',
+                hieuUng: 'dot',
+                moTa: 'Chém rộng + thiêu đốt theo thời gian'
+            },
+            {
+                ten: 'Búa Thor',
+                icon: '🔨',
+                satThuong: 35,
+                tam: 70,
+                tocDo: 4,
+                loai: 'don',
+                mau: '#4488ff',
+                hieuUng: 'nem',
+                moTa: 'Đập mạnh — hất văng đối thủ'
+            },
+            {
+                ten: 'Phi Tiêu',
+                icon: '🎯',
+                satThuong: 12,
+                tam: 250,
+                tocDo: 10,
+                loai: 'nem',
+                mau: '#ff00ff',
+                hieuUng: 'none',
+                moTa: 'Ném xa — tầm đánh rộng'
+            },
+            {
+                ten: 'Kiếm Katana',
+                icon: '⚔️',
+                satThuong: 25,
+                tam: 100,
+                tocDo: 10,
+                loai: 'chem',
+                mau: '#ff0044',
+                hieuUng: 'xuyen',
+                moTa: 'Chém nhanh — xuyên giáp'
+            },
+            {
+                ten: 'Rìu Chiến',
+                icon: '🪓',
+                satThuong: 30,
+                tam: 85,
+                tocDo: 5,
+                loai: 'chem',
+                mau: '#aa4400',
+                hieuUng: 'chayMau',
+                moTa: 'Chém mạnh — chảy máu liên tục'
+            }
+        ];
+        
+        // === TRẠNG THÁI ===
+        let cheDo = '';
+        let dangChoi = false;
+        let vong = 1;
+        let nguoiThang = 0;
+        
+        // === NGƯỜI QUE ===
+        function taoNguoiQue(x, huong, mauSac, laAI) {
+            return {
+                x: x, y: 500,
+                vx: 0, vy: 0,
+                rong: 40, cao: 100,
+                huong: huong, // 1 = phải, -1 = trái
+                mau: 100,
+                mauToiDa: 100,
+                mauSac: mauSac,
+                vuKhi: 0,
+                dangTanCong: false,
+                dangDa: false,
+                thoiGianTanCong: 0,
+                thoiGianHoiChieu: 0,
+                thoiGianChoang: 0,
+                thoiGianChay: 0,
+                tocDo: 4,
+                tocDoNhay: -14,
+                trenDat: true,
+                combo: 0,
+                thoiGianCombo: 0,
+                laAI: laAI,
+                // Animation
+                khungChan: 0,
+                khungTay: 0,
+                gocTay: 0,
+                gocChan: 0,
+                // Hitbox
+                hitbox: { x: 0, y: 0, r: 0 }
+            };
+        }
+        
+        let p1, p2;
+        
+        // === INPUT ===
+        const phim = {};
+        document.addEventListener('keydown', e => {
+            phim[e.key.toLowerCase()] = true;
+            // P1 đổi vũ khí
+            if (e.key.toLowerCase() === 'h' && dangChoi) doiVuKhi(p1);
+            // P2 đổi vũ khí
+            if (e.key.toLowerCase() === 'j' && dangChoi) doiVuKhi(p2);
+        });
+        document.addEventListener('keyup', e => phim[e.key.toLowerCase()] = false);
+        
+        // === HÀM HỖ TRỢ ===
+        function khoangCach(x1, y1, x2, y2) {
+            return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+        }
+        
+        function vaCham(a, b) {
+            return Math.abs(a.x - b.x) < (a.rong + b.rong)/2 &&
+                   Math.abs(a.y - b.y) < (a.cao + b.cao)/2;
+        }
+        
+        function gioiHan(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+        
+        function ngauNhien(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        // === VẬT LÝ ===
+        function capNhatVatLy(nguoi) {
+            // Trọng lực
+            nguoi.vy += 0.6;
+            
+            // Ma sát
+            nguoi.vx *= 0.85;
+            
+            // Giới hạn tốc độ rơi
+            nguoi.vy = Math.min(nguoi.vy, 15);
+            
+            // Cập nhật vị trí
+            nguoi.x += nguoi.vx;
+            nguoi.y += nguoi.vy;
+            
+            // Giới hạn màn hình
+            nguoi.x = gioiHan(nguoi.x, nguoi.rong/2, canvas.width - nguoi.rong/2);
+            
+            // Đất
+            if (nguoi.y > 550) {
+                nguoi.y = 550;
+                nguoi.vy = 0;
+                nguoi.trenDat = true;
+            }
+            
+            // Choáng
+            if (nguoi.thoiGianChoang > 0) {
+                nguoi.thoiGianChoang--;
+                nguoi.vx *= 0.5;
+            }
+            
+            // Cháy
+            if (nguoi.thoiGianChay > 0) {
+                nguoi.thoiGianChay--;
+                if (nguoi.thoiGianChay % 20 === 0) {
+                    nguoi.mau -= 1;
+                    taoHieuUng(nguoi.x, nguoi.y - 50, 'lua', 3);
+                }
+            }
+            
+            // Combo timeout
+            if (nguoi.thoiGianCombo > 0) {
+                nguoi.thoiGianCombo--;
+                if (nguoi.thoiGianCombo <= 0) nguoi.combo = 0;
+            }
+            
+            // Animation
+            if (Math.abs(nguoi.vx) > 0.5) {
+                nguoi.khungChan += 0.3;
+                nguoi.gocChan = Math.sin(nguoi.khungChan) * 30;
+            } else {
+                nguoi.gocChan *= 0.8;
+            }
+            
+            nguoi.gocTay *= 0.9;
+        }
+        
+        // === DI CHUYỂN ===
+        function diChuyen(nguoi, trai, phai, nhay, tanCong, da) {
+            if (nguoi.thoiGianChoang > 0) return;
+            
+            const vk = VU_KHI[nguoi.vuKhi];
+            
+            if (phim[trai]) {
+                nguoi.vx = -nguoi.tocDo;
+                nguoi.huong = -1;
+            }
+            if (phim[phai]) {
+                nguoi.vx = nguoi.tocDo;
+                nguoi.huong = 1;
+            }
+            if (phim[nhay] && nguoi.trenDat) {
+                nguoi.vy = nguoi.tocDoNhay;
+                nguoi.trenDat = false;
+                taoHieuUng(nguoi.x, nguoi.y + 50, 'bui', 5);
+            }
+            
+            // Tấn công
+            if (phim[tanCong] && nguoi.thoiGianHoiChieu <= 0 && !nguoi.dangTanCong) {
+                tanCongNguoi(nguoi);
+            }
+            
+            // Đá
+            if (phim[da] && nguoi.trenDat && nguoi.thoiGianHoiChieu <= 0 && !nguoi.dangDa) {
+                daNguoi(nguoi);
+            }
+            
+            if (nguoi.thoiGianHoiChieu > 0) nguoi.thoiGianHoiChieu--;
+            if (nguoi.thoiGianTanCong > 0) {
+                nguoi.thoiGianTanCong--;
+                nguoi.dangTanCong = nguoi.thoiGianTanCong > 0;
+            }
+        }
+        
+        // === TẤN CÔNG ===
+        function tanCongNguoi(nguoi) {
+            const vk = VU_KHI[nguoi.vuKhi];
+            nguoi.dangTanCong = true;
+            nguoi.thoiGianTanCong = vk.tocDo;
+            nguoi.thoiGianHoiChieu = vk.tocDo + 5;
+            nguoi.gocTay = nguoi.huong * 60;
+            
+            // Tính hitbox
+            const tamX = nguoi.x + nguoi.huong * (nguoi.rong/2 + vk.tam/2);
+            const tamY = nguoi.y - 30;
+            
+            // Kiểm tra trúng đối thủ
+            const doiThu = nguoi === p1 ? p2 : p1;
+            const kc = khoangCach(tamX, tamY, doiThu.x, doiThu.y - 30);
+            
+            if (kc < vk.tam/2 + 30) {
+                // Trúng!
+                let st = vk.satThuong;
+                
+                // Combo
+                nguoi.combo++;
+                nguoi.thoiGianCombo = 60;
+                st *= (1 + nguoi.combo * 0.1);
+                
+                // Hiệu ứng vũ khí
+                if (vk.hieuUng === 'choang' && Math.random() < 0.3) {
+                    doiThu.thoiGianChoang = 40;
+                    taoHieuUng(doiThu.x, doiThu.y - 60, 'sao', 5);
+                }
+                if (vk.hieuUng === 'dot') {
+                    doiThu.thoiGianChay = 180;
+                }
+                if (vk.hieuUng === 'nem') {
+                    doiThu.vx = nguoi.huong * 8;
+                    doiThu.vy = -5;
+                }
+                if (vk.hieuUng === 'dien') {
+                    doiThu.thoiGianChoang = 20;
+                    doiThu.tocDo = 2;
+                    setTimeout(() => doiThu.tocDo = 4, 2000);
+                }
+                if (vk.hieuUng === 'xuyen') {
+                    st *= 1.3;
+                }
+                if (vk.hieuUng === 'chayMau') {
+                    doiThu.thoiGianChay = 120;
+                }
+                
+                doiThu.mau -= st;
+                
+                // Knockback
+                doiThu.vx = nguoi.huong * 3;
+                doiThu.vy = -3;
+                
+                // Hiệu ứng
+                taoHieuUng(doiThu.x, doiThu.y - 30, 'mau', 8);
+                taoHieuUng(doiThu.x, doiThu.y - 30, 'tanCong', 3);
+                
+                // Màn hình rung
+                rungManHinh = 5;
+                
+                // Text damage
+                taoTextBay(doiThu.x, doiThu.y - 80, Math.floor(st), vk.mau);
+            }
+            
+            // Vũ khí ném
+            if (vk.loai === 'nem') {
+                taoProjectile(nguoi.x, nguoi.y - 40, nguoi.huong, vk);
+            }
+        }
+        
+        function daNguoi(nguoi) {
+            nguoi.dangDa = true;
+            nguoi.thoiGianHoiChieu = 20;
+            nguoi.vx = nguoi.huong * 8;
+            
+            const doiThu = nguoi === p1 ? p2 : p1;
+            const kc = khoangCach(nguoi.x, nguoi.y, doiThu.x, doiThu.y);
+            
+            if (kc < 60) {
+                doiThu.mau -= 5;
+                doiThu.vx = nguoi.huong * 6;
+                doiThu.vy = -4;
+                doiThu.thoiGianChoang = 15;
+                taoHieuUng(doiThu.x, doiThu.y - 30, 'mau', 5);
+                rungManHinh = 3;
+            }
+            
+            setTimeout(() => nguoi.dangDa = false, 300);
+        }
+        
+        function doiVuKhi(nguoi) {
+            nguoi.vuKhi = (nguoi.vuKhi + 1) % VU_KHI.length;
+            taoHieuUng(nguoi.x, nguoi.y - 60, 'doiVuKhi', 1);
+        }
+        
+        // === PROJECTILE ===
+        let projectiles = [];
+        function taoProjectile(x, y, huong, vk) {
+            projectiles.push({
+                x, y,
+                vx: huong * 10,
+                vy: -2,
+                satThuong: vk.satThuong,
+                mau: vk.mau,
+                banKinh: 8,
+                chu: nguoi === p1 ? p1 : p2
+            });
+        }
+        
+        // === AI ===
+        function capNhatAI() {
+            if (!p2.laAI || p2.thoiGianChoang > 0) return;
+            
+            const kc = khoangCach(p1.x, p1.y, p2.x, p2.y);
+            const vk = VU_KHI[p2.vuKhi];
+            
+            // Quyết định
+            if (kc > vk.tam + 50) {
+                // Tiếp cận
+                if (p1.x > p2.x) {
+                    p2.vx = p2.tocDo * 0.8;
+                    p2.huong = 1;
+                } else {
+                    p2.vx = -p2.tocDo * 0.8;
+                    p2.huong = -1;
+                }
+                
+                // Nhảy nếu cần
+                if (p1.y < p2.y - 50 && p2.trenDat && Math.random() < 0.05) {
+                    p2.vy = p2.tocDoNhay;
+                    p2.trenDat = false;
+                }
+            } else if (kc < vk.tam) {
+                // Tấn công
+                if (p2.thoiGianHoiChieu <= 0 && Math.random() < 0.08) {
+                    tanCongNguoi(p2);
+                }
+                // Lùi nếu quá gần và vũ khí tầm xa
+                if (kc < 50 && vk.loai === 'chem') {
+                    p2.vx = -p2.huong * 3;
+                }
+            }
+            
+            // Đổi vũ khí thông minh
+            if (p2.mau < 30 && p2.vuKhi !== 5 && Math.random() < 0.01) {
+                p2.vuKhi = 5; // chuyển phi tiêu khi yếu
+            }
+        }
+        
+        // === HIỆU ỨNG ===
+        let hieuUngs = [];
+        let textBays = [];
+        let rungManHinh = 0;
+        
+        function taoHieuUng(x, y, loai, soLuong) {
+            for (let i = 0; i < soLuong; i++) {
+                let mau, banKinh, vx, vy, doi;
+                
+                switch(loai) {
+                    case 'mau':
+                        mau = `hsl(${ngauNhien(0, 20)}, 100%, 50%)`;
+                        banKinh = ngauNhien(2, 5);
+                        vx = ngauNhien(-3, 3);
+                        vy = ngauNhien(-5, -1);
+                        doi = 30;
+                        break;
+                    case 'lua':
+                        mau = `hsl(${ngauNhien(10, 50)}, 100%, 50%)`;
+                        banKinh = ngauNhien(3, 8);
+                        vx = ngauNhien(-1, 1);
+                        vy = ngauNhien(-3, -1);
+                        doi = 25;
+                        break;
+                    case 'bui':
+                        mau = '#888';
+                        banKinh = ngauNhien(2, 4);
+                        vx = ngauNhien(-2, 2);
+                        vy = ngauNhien(-1, 0);
+                        doi = 20;
+                        break;
+                    case 'sao':
+                        mau = '#ff0';
+                        banKinh = ngauNhien(2, 6);
+                        vx = ngauNhien(-4, 4);
+                        vy = ngauNhien(-4, 4);
+                        doi = 20;
+                        break;
+                    case 'tanCong':
+                        mau = '#fff';
+                        banKinh = ngauNhien(1, 3);
+                        vx = ngauNhien(-2, 2);
+                        vy = ngauNhien(-2, 2);
+                        doi = 10;
+                        break;
+                    case 'doiVuKhi':
+                        mau = '#0ff';
+                        banKinh = 4;
+                        vx = 0;
+                        vy = -2;
+                        doi = 20;
+                        break;
+                }
+                
+                hieuUngs.push({ x, y, vx, vy, banKinh, mau, doi, loai });
+            }
+        }
+        
+        function taoTextBay(x, y, text, mau) {
+            textBays.push({ x, y, text, mau, doi: 40, vy: -2 });
+        }
+        
+        // === VẼ ===
+        function veNguoiQue(nguoi) {
+            ctx.save();
+            ctx.translate(nguoi.x, nguoi.y);
+            
+            // Đổ bóng
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(0, 55, 20, 5, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Chân
+            ctx.strokeStyle = nguoi.mauSac;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            
+            // Chân trái
+            ctx.beginPath();
+            ctx.moveTo(-5, 20);
+            ctx.lineTo(-15 + nguoi.gocChan, 50);
+            ctx.stroke();
+            
+            // Chân phải
+            ctx.beginPath();
+            ctx.moveTo(5, 20);
+            ctx.lineTo(15 - nguoi.gocChan, 50);
+            ctx.stroke();
+            
+            // Thân
+            ctx.strokeStyle = nguoi.mauSac;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(0, -30);
+            ctx.lineTo(0, 20);
+            ctx.stroke();
+            
+            // Glow thân
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = nguoi.mauSac;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Đầu
+            ctx.fillStyle = nguoi.mauSac;
+            ctx.beginPath();
+            ctx.arc(0, -45, 12, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Mắt
+            const matX = nguoi.huong * 4;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(matX - 2, -47, 3, 0, Math.PI*2);
+            ctx.arc(matX + 2, -47, 3, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Tay
+            const gocTay = nguoi.dangTanCong ? nguoi.gocTay : (Math.sin(Date.now()/200) * 5);
+            
+            // Tay trái
+            ctx.strokeStyle = nguoi.mauSac;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, -20);
+            ctx.lineTo(-20, -10 + gocTay * 0.3);
+            ctx.stroke();
+            
+            // Tay phải (cầm vũ khí)
+            ctx.beginPath();
+            ctx.moveTo(0, -20);
+            ctx.lineTo(25 * nguoi.huong, -25 + gocTay);
+            ctx.stroke();
+            
+            // Vũ khí
+            const vk = VU_KHI[nguoi.vuKhi];
+            const tayX = 25 * nguoi.huong;
+            const tayY = -25 + gocTay;
+            
+            ctx.save();
+            ctx.translate(tayX, tayY);
+            ctx.rotate(nguoi.huong === 1 ? 0.3 : -0.3 + Math.PI);
+            
+            // Glow vũ khí
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = vk.mau;
+            
+            if (vk.loai === 'don') {
+                // Găng/búa
+                ctx.fillStyle = vk.mau;
+                ctx.fillRect(-5, -20, 10, 25);
+                if (vk.ten === 'Búa Thor') {
+                    ctx.fillRect(-15, -25, 30, 8);
+                }
+            } else if (vk.loai === 'chem') {
+                // Kiếm/rìu
+                ctx.strokeStyle = vk.mau;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -vk.tam/2);
+                ctx.stroke();
+                // Lưỡi
+                ctx.fillStyle = vk.mau;
+                ctx.beginPath();
+                ctx.moveTo(-3, -vk.tam/2);
+                ctx.lineTo(3, -vk.tam/2);
+                ctx.lineTo(0, -vk.tam/2 - 15);
+                ctx.fill();
+            } else if (vk.loai === 'nem') {
+                // Phi tiêu
+                ctx.fillStyle = vk.mau;
+                ctx.beginPath();
+                ctx.moveTo(0, -10);
+                ctx.lineTo(5, 0);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(-5, 0);
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            
+            // Thanh máu trên đầu
+            const tyLe = nguoi.mau / nguoi.mauToiDa;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-20, -65, 40, 5);
+            ctx.fillStyle = tyLe > 0.5 ? '#0f0' : (tyLe > 0.25 ? '#ff0' : '#f00');
+            ctx.fillRect(-20, -65, 40 * tyLe, 5);
+            
+            // Choáng
+            if (nguoi.thoiGianChoang > 0) {
+                ctx.fillStyle = 'rgba(255,255,0,0.3)';
+                ctx.beginPath();
+                ctx.arc(0, -30, 40, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Cháy
+            if (nguoi.thoiGianChay > 0) {
+                ctx.fillStyle = 'rgba(255,100,0,0.4)';
+                ctx.beginPath();
+                ctx.arc(0, -20, 35, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Combo
+            if (nguoi.combo > 1) {
+                ctx.fillStyle = '#ff0';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${nguoi.combo} COMBO!`, 0, -75);
+            }
+            
+            ctx.restore();
+        }
+        
+        function ve() {
+            // Rung màn hình
+            let rx = 0, ry = 0;
+            if (rungManHinh > 0) {
+                rx = ngauNhien(-rungManHinh, rungManHinh);
+                ry = ngauNhien(-rungManHinh, rungManHinh);
+                rungManHinh *= 0.9;
+                if (rungManHinh < 0.5) rungManHinh = 0;
+            }
+            
+            ctx.save();
+            ctx.translate(rx, ry);
+            
+            // Nền
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0d0d1a');
+            gradient.addColorStop(1, '#1a0d1a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Sao
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137.5) % canvas.width;
+                const y = (i * 89.7) % (canvas.height - 100);
+                const s = (i % 3) + 1;
+                ctx.globalAlpha = 0.3 + Math.sin(Date.now()/1000 + i) * 0.2;
+                ctx.fillRect(x, y, s, s);
+            }
+            ctx.globalAlpha = 1;
+            
+            // Đất
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 560, canvas.width, 140);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 560);
+            ctx.lineTo(canvas.width, 560);
+            ctx.stroke();
+            
+            // Vạch đấu trường
+            ctx.strokeStyle = 'rgba(0,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath();
+                ctx.moveTo(i, 560);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Projectiles
+            for (const p of projectiles) {
+                ctx.fillStyle = p.mau;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.mau;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.banKinh, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Vệt
+                ctx.strokeStyle = p.mau;
+                ctx.globalAlpha = 0.3;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+            
+            // Người que
+            veNguoiQue(p1);
+            veNguoiQue(p2);
+            
+            // Hiệu ứng
+            for (let i = hieuUngs.length - 1; i >= 0; i--) {
+                const h = hieuUngs[i];
+                h.x += h.vx;
+                h.y += h.vy;
+                h.vy += 0.1;
+                h.doi--;
+                
+                ctx.globalAlpha = h.doi / 30;
+                ctx.fillStyle = h.mau;
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.banKinh, 0, Math.PI*2);
+                ctx.fill();
+                
+                if (h.doi <= 0) hieuUngs.splice(i, 1);
+            }
+            ctx.globalAlpha = 1;
+            
+            // Text bay
+            for (let i = textBays.length - 1; i >= 0; i--) {
+                const t = textBays[i];
+                t.y += t.vy;
+                t.doi--;
+                
+                ctx.globalAlpha = t.doi / 40;
+                ctx.fillStyle = t.mau;
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(t.text, t.x, t.y);
+                
+                if (t.doi <= 0) textBays.splice(i, 1);
+            }
+            ctx.globalAlpha = 1;
+            
+            ctx.restore();
+        }
+        
+        // === CẬP NHẬT ===
+        function capNhat() {
+            if (!dangChoi) return;
+            
+            // P1
+            diChuyen(p1, 'a', 'd', 'w', 'f', 'g');
+            capNhatVatLy(p1);
+            
+            // P2
+            if (p2.laAI) {
+                capNhatAI();
+            } else {
+                diChuyen(p2, 'arrowleft', 'arrowright', 'arrowup', 'l', 'k');
+            }
+            capNhatVatLy(p2);
+            
+            // Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2;
+                
+                const doiThu = p.chu === p1 ? p2 : p1;
+                if (khoangCach(p.x, p.y, doiThu.x, doiThu.y - 30) < 30) {
+                    doiThu.mau -= p.satThuong;
+                    doiThu.vx = p.vx * 0.5;
+                    taoHieuUng(doiThu.x, doiThu.y - 30, 'mau', 5);
+                    taoTextBay(doiThu.x, doiThu.y - 80, Math.floor(p.satThuong), p.mau);
+                    rungManHinh = 4;
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+                
+                if (p.x < -50 || p.x > canvas.width + 50 || p.y > 560) {
+                    projectiles.splice(i, 1);
+                }
+            }
+            
+            // Kiểm tra thắng
+            if (p1.mau <= 0 || p2.mau <= 0) {
+                dangChoi = false;
+                const nguoiThang = p1.mau > 0 ? 'NGƯỜI QUE 1' : (p2.laAI ? 'MÁY' : 'NGƯỜI QUE 2');
+                document.getElementById('winnerText').textContent = nguoiThang + ' THẮNG!';
+                document.getElementById('winnerText').style.color = p1.mau > 0 ? '#0f0' : '#f00';
+                document.getElementById('winnerScreen').style.display = 'flex';
+            }
+            
+            // UI
+            document.getElementById('p1Bar').style.width = Math.max(0, p1.mau) + '%';
+            document.getElementById('p2Bar').style.width = Math.max(0, p2.mau) + '%';
+            document.getElementById('p1Weapon').textContent = VU_KHI[p1.vuKhi].icon;
+            document.getElementById('p2Weapon').textContent = VU_KHI[p2.vuKhi].icon;
+        }
+        
+        // === VÒNG LẶP ===
+        function vongLap() {
+            capNhat();
+            ve();
+            requestAnimationFrame(vongLap);
+        }
+        
+        // === BẮT ĐẦU ===
+        function batDau(mode) {
+            cheDo = mode;
+            dangChoi = true;
+            vong = 1;
+            
+            p1 = taoNguoiQue(200, 1, '#0f0', false);
+            p2 = taoNguoiQue(1000, -1, '#f00', mode === 'ai');
+            
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('p2Name').textContent = mode === 'ai' ? 'MÁY' : 'NGƯỜI QUE 2';
+        }
+        
+        function choiLai() {
+            document.getElementById('winnerScreen').style.display = 'none';
+            batDau(cheDo);
+        }
+        
+        function veMenu() {
+            document.getElementById('winnerScreen').style.display = 'none';
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('menu').style.display = 'flex';
+            dangChoi = false;
+        }
+        
+        // Chạy
+        vongLap();
+    </script>
+</body>
+</html>
